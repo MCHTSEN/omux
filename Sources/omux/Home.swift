@@ -674,15 +674,26 @@ private struct HomeSessionRow: View {
     var body: some View {
         WithRuntime(tab.id) { rt in
             HStack(spacing: 9) {
-                StatusDot(color: rt.statusColor ?? Color.secondary.opacity(0.4), pulsing: rt.statusState == .working, size: 8)
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 6) {
-                        Text(tab.name).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
-                        Text(group.name).font(.system(size: 10.5)).foregroundStyle(.tertiary).lineLimit(1)
+                let hue = ProjectMark.hue(group.name)
+                let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
+                ProjectFace(group: group, fontSize: 9, shape: shape)
+                    .frame(width: 22, height: 22)
+                    .background(hue.opacity(0.18), in: shape)
+                    .overlay(alignment: .topTrailing) {
+                        StatusDot(color: rt.statusColor ?? Color.secondary.opacity(0.4), pulsing: rt.statusState == .working, size: 7)
+                            .padding(1.5)
+                            .background(Color(nsColor: .windowBackgroundColor), in: Circle())
+                            .offset(x: 3, y: -3)
                     }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(tab.name).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
                     Text(rt.statusLine(showFolder: false) ?? "Finished").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 6)
+                Text(group.name)
+                    .font(.system(size: 10.5, weight: .semibold)).foregroundStyle(hue).lineLimit(1)
+                    .padding(.horizontal, 7).padding(.vertical, 2)
+                    .background(hue.opacity(0.15), in: Capsule())
                 if buttons, rt.awaitsPermission { PermissionButtons(tabID: tab.id).controlSize(.small) }
                 Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary).opacity(hovering ? 1 : 0)
             }

@@ -164,7 +164,7 @@ struct ProjectRail: View {
 /// the project's own, and a dot on the corner for the most pressing state among its sessions
 /// (waiting, failed, working). The one on show fills softly with its colour and has a bar at
 /// the strip's edge.
-private struct ProjectMark: View {
+struct ProjectMark: View {
     @EnvironmentObject var store: Store
     let group: TabGroup
     let shown: Bool
@@ -185,7 +185,7 @@ private struct ProjectMark: View {
         let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
         Button(action: action) {
           HStack(spacing: 9) {
-            tileFace(hue: hue, shape: shape)
+            ProjectFace(group: group, fontSize: 11, shape: shape)
                 .frame(width: 30, height: 30)
                 .background {
                     if shown {
@@ -230,15 +230,6 @@ private struct ProjectMark: View {
         .help(named ? "" : Self.summary(group.name, sessions: group.tabs.count, waiting: waiting, failed: failed, working: working))
     }
 
-    /// The picture the project was given, else its initials.
-    @ViewBuilder private func tileFace(hue: Color, shape: RoundedRectangle) -> some View {
-        if let picture = ProjectIcons.image(named: group.icon) {
-            Image(nsImage: picture).resizable().scaledToFill().clipShape(shape)
-        } else {
-            Text(Self.initials(group.name)).font(.system(size: 11, weight: .bold)).foregroundStyle(hue)
-        }
-    }
-
     /// Six colours a project can have. Which one comes from its name, so it is the same on
     /// every launch and on every Mac.
     private static let hues: [Color] = [
@@ -278,6 +269,21 @@ private struct ProjectMark: View {
 }
 
 /// The name of the project the list shows, with where it is, above its sessions.
+/// The picture the project was given, else its initials in the project's colour.
+struct ProjectFace: View {
+    let group: TabGroup
+    var fontSize: CGFloat = 11
+    let shape: RoundedRectangle
+
+    var body: some View {
+        if let picture = ProjectIcons.image(named: group.icon) {
+            Image(nsImage: picture).resizable().scaledToFill().clipShape(shape)
+        } else {
+            Text(ProjectMark.initials(group.name)).font(.system(size: fontSize, weight: .bold)).foregroundStyle(ProjectMark.hue(group.name))
+        }
+    }
+}
+
 struct RailProjectTitle: View {
     @EnvironmentObject var store: Store
     let group: TabGroup
