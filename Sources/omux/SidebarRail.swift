@@ -4,6 +4,32 @@ import SwiftUI
 // beside it shows the sessions of the one picked. However many projects there are, each is one
 // click away and the list stays short.
 
+/// Drag a project's mark onto another to put it at that place. Pinned projects are listed
+/// ahead of the rest, so a drag across that line changes the order but not what the rail shows.
+private struct RailReorder: ViewModifier {
+    @EnvironmentObject var store: Store
+    let group: TabGroup
+    private static let prefix = "omux-project:"
+
+    func body(content: Content) -> some View {
+        content
+            .onDrag { NSItemProvider(object: (Self.prefix + group.id.uuidString) as NSString) }
+            .onDrop(of: [.plainText], isTargeted: nil) { providers in
+                guard let item = providers.first else { return false }
+                item.loadObject(ofClass: NSString.self) { object, _ in
+                    guard let text = object as? String, text.hasPrefix(Self.prefix),
+                          let id = UUID(uuidString: String(text.dropFirst(Self.prefix.count))) else { return }
+                    DispatchQueue.main.async { store.moveGroup(id, onto: group.id) }
+                }
+                return true
+            }
+    }
+}
+
+private extension View {
+    func railReorder(_ group: TabGroup) -> some View { modifier(RailReorder(group: group)) }
+}
+
 /// The strip of project marks, with the app's own buttons at its foot.
 struct ProjectRail: View {
     @EnvironmentObject var store: Store
@@ -48,6 +74,7 @@ struct ProjectRail: View {
                     ForEach(active) { group in
                         ProjectMark(group: group, shown: group.id == shownID && !home.shown, named: open) { pick(group) }
                             .contextMenu { GroupMenu(group: group) }
+                            .railReorder(group)
                     }
                     let idle = idle
                     // The project on show stays in view, so a stack holding it lists itself.
@@ -78,6 +105,7 @@ struct ProjectRail: View {
                         ForEach(idle) { group in
                             ProjectMark(group: group, shown: group.id == shownID && !home.shown, named: open, quiet: true) { pick(group) }
                                 .contextMenu { GroupMenu(group: group) }
+                                .railReorder(group)
                         }
                     }
                     Button { store.openFolderPanel() } label: {
